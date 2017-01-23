@@ -180,16 +180,16 @@ class Dstar:
 		if not(self.close(self.getG(u), self.getRHS(u))):
 			self.insert(u)
 
-	def keyHaskCode(self,u):
+	def keyHashCode(self,u):
 		return u.k[0] + 1193*u.k[1]
 
 	def isValid(self,u):
 		cur = self.openHash.get(u)
 		if cur == None: return False
-		if not(self.close(self.keyHaskCode(u), cur)): return False
+		if not(self.close(self.keyHashCode(u), cur)): return False
 		return True
 
-	def insert(u):
+	def insert(self,u):
 		u = self.calculateKey(u)
 		cur = self.openHash.get(u,None)
 		csum = self.keyHashCode(u)
@@ -198,7 +198,7 @@ class Dstar:
 			return
 
 		self.openHash[u] = csum
-		self.openList.append(u)
+		self.openList.put(u)
 
 	def remove(self,u):
 		cur = self.openHash.get(u)
@@ -220,7 +220,7 @@ class Dstar:
 				print x,y
 				if not(x == 0 and y == 0):
 					nu = state(u.x+x,u.y + y)
-					if !self.occupied(nu): s.append(nu)
+					if not self.occupied(nu): s.append(nu)
 		return s.reverse()
 
 	def updateStart(self,x,y):
@@ -234,7 +234,43 @@ class Dstar:
 		self.s_last = self.s_start
 
 	def updateGoal(self,x,y):
-		pass
+		toAdd = []
+
+		kk = []
+
+		for cell,info in self.cellHash.iteritems():
+			if not self.close(info.cost, self.C1):
+				tp = [ipoint(),None]
+				tp[0].x = cell.x
+				tp[0].y = cell.y
+				tp[1] = info.cost
+				toAdd.append(tp)
+
+		self.cellHash = {}
+		self.openHash = {}
+
+		self.openList = Queue.PriorityQueue()
+
+		self.k_m = 0
+
+		self.s_goal.x = x
+		self.s_goal.y = y
+
+		tmp = cellInfo()
+		tmp.g = tmp.rhs = 0
+		tmp.cost = self.C1
+
+		self.cellHash[s_goal] = tmp
+		self.s_start = self.calculateKey(self.s_start)
+
+		for item in toAdd:
+			updateCell(item[0].x,item[0].y, item[1])
+
+
+	def computeShortestPath(self):
+		s = []
+
+		if self.openList.empty(): return 1
 
 
 
