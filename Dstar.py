@@ -272,13 +272,28 @@ class Dstar:
 
 		if self.openList.empty(): return 1
 
+		k = 0
+		s_start =self.calculateKey(self.s_start)
+		while( (not self.openList.empty()) and 
+				(self.openList.get() < s_start) or
+				(self.getRHS(s_start) != self.getG(s_start))
+				)
+			k += 1
+			if k > self.maxSteps:
+				print "Reached max steps"
+				return -1
 
+		u = state()
 
-		
+		test = (self.getRHS(self.s_start) == self.getG(self.s_start))
 
+		while True:
+			if self.openList.empty(): return 1
+			u = self.openList.get()
 
-
-
+			if self.isValid(u):
+				if (not(u < s_start) and (not test)): return 2
+				break
 
 
 
