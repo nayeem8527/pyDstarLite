@@ -55,7 +55,7 @@ def eightCondist(a,b):
 
 
 class Dstar:
-	minx,miny,maxx,maxy=0,0,200,200
+	minx,miny,maxx,maxy=0,0,100,100
 	openList = Queue.PriorityQueue()
 	cellHash = {}
 	openHash = {}
@@ -213,8 +213,8 @@ class Dstar:
 		cur = self.openHash.get(u,None)
 		csum = self.keyHashCode(u)
 
-		if (cur != None and self.close(csum,cur)):
-			return
+		# if (cur != None and self.close(csum,cur)):
+		# 	return
 
 		self.openHash[u] = csum
 		self.openList.put(u)
@@ -356,13 +356,16 @@ class Dstar:
 			print "NO PATH2"
 			return False
 		s = []
+		s_set = set()
 		while cur_state != self.s_goal:
 			path.append(cur_state)
-			# print cur_state
+			# s_set = set()
 			# self.visualize(path)
+			# print cur_state
 			if self.getSucc(cur_state) != None:
-				s += self.getSucc(cur_state)
-			if len(s) == 0:
+				# s += self.getSucc(cur_state)
+				s_set = s_set.union(set(self.getSucc(cur_state)))
+			if len(s_set) == 0:
 				print "NO PATH3"
 				return False
 
@@ -370,13 +373,16 @@ class Dstar:
 			tmin = None
 
 			smin = state()
-
+			s = s_set
 			for i,place in enumerate(s):
 				val = self.cost(cur_state,place)
 				val2 = self.trueDist(place,self.s_goal) + self.trueDist(self.s_start,place)
 
 				val += self.getG(place)
-				# print "p",i,place, "val", val,"True Dist", val2, "cmin", cmin ,"min t",tmin,"here>goal", self.trueDist(place,self.s_goal) ,"start>here", self.trueDist(self.s_start,place)
+				# print "p",i,place
+				# self.visualize(point=place,points=list(s_set))
+				# self.visualize(point=place,waitKey=100)
+				# print "val", val,"True Dist", val2, "cmin", cmin ,"min t",tmin,"here>goal", self.trueDist(place,self.s_goal) ,"start>here", self.trueDist(self.s_start,place)
 				# print
 				if self.close(val,cmin):
 					if tmin > val2:
@@ -387,14 +393,21 @@ class Dstar:
 						tmin = val2
 						cmin = val
 						smin = place
-			print cur_state, smin
+			# print cur_state, smin
 			cur_state = smin
 		path.append(self.s_goal)
 		self.path = path
 		return True
 
-	def visualize(self,path=None):
+	def visualize(self,path=None,points = None,point = None,waitKey=1):
 		frame = np.zeros((self.maxx+ 30,self.maxy+30,3),np.uint8)
+		if point:
+				frame[point.x,point.y] = (255,255,255)
+		if points:
+			for point in points:
+				frame[point.x,point.y] = (255,0,255)
+		if point:
+				frame[point.x,point.y] = (255,255,255)
 		if path:
 			for x in path:
 				frame[x.x,x.y] = (255,0,0)
@@ -415,28 +428,70 @@ class Dstar:
 			frame[x.x,x.y] = (0,255,0)
 		frame[self.s_start.x,self.s_start.y] = (255,0,0)
 		cv2.imshow("path",frame)
-		cv2.waitKey()
+		if (path or point) and waitKey:
+			cv2.waitKey(waitKey)
 
 #usage ()
-xx = Dstar(40,50,140, 90)
+xx = Dstar(10,10,80,80)
 # for x in range(xx.maxx):
 # 	for y in range(xx.maxy):
 		# xx.updateCell(x,y,0)
 cv2.namedWindow('path',cv2.WINDOW_NORMAL)
-xx.replan()
 xx.visualize()
 
+drawing = False # true if mouse is pressed
+mode = True # if True, draw rectangle. Press 'm' to toggle to curve
+ix,iy = -1,-1
+autoreplan = False
+change = False
+# mouse callback function
+def draw_circle(event,x,y,flags,param):
+	global ix,iy,drawing,mode,change
+	if event == cv2.EVENT_LBUTTONDOWN:
+		drawing = True
+		ix,iy = x,y
+	elif event == cv2.EVENT_MOUSEMOVE:
+		if drawing:
+			xx.updateCell(y,x,-1)
+			change = True
+		# if drawing == True:
+		# ,0,255),-1)
+	elif event == cv2.EVENT_LBUTTONUP:
+		change = True
+		drawing = False
+		xx.updateCell(y,x,-1)
 
-for y in range(60):
-	xx.updateCell(50,y,-10)
-	xx.updateCell(51,y,-10)
-	xx.updateCell(y,2*y+3,-1)
-	xx.updateCell(y,2*y+1,-1)
-	xx.updateCell(y,2*y+2,-1)
+# for y in range(60):
+# 	xx.updateCell(50,y,-10)
+# 	xx.updateCell(51,y,-10)
+# 	xx.updateCell(y,2*y+3,-1)
+# 	xx.updateCell(y,2*y+1,-1)
+# 	xx.updateCell(y,2*y+2,-1)
 		
+cv2.setMouseCallback('path',draw_circle)
+
+while(1):
+	k = cv2.waitKey(1) & 0xFF
+	if k == ord('m'):
+		mode = not mode
+	elif k == ord("a"):
+		autoreplan = not autoreplan
+	elif k == ord("r"):
+		xx.replan()
+		xx.visualize()
+	elif k == 27:
+		break
+	if autoreplan : 
+		xx.replan()
+		xx.visualize()
+		change = False
+
+	if change:
+		xx.visualize()
+		change = False
 
 
-xx.replan()
-xx.visualize()
+
+
 # xx.updatseGoal(100,100)
 
