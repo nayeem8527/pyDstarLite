@@ -34,7 +34,7 @@ class state:
 		return self.x + self.y*34245
 
 	def __repr__(self):
-		return "x:" + str(self.x) + "y:" + str(self.y)
+		return "x:" + str(self.x) + "y:" + str(self.y) + " k= [" + str(self.k[0])+" , " + str(self.k[1]) + "]"
 
 class cellInfo():
 	g = None
@@ -50,12 +50,12 @@ def eightCondist(a,b):
 	maxim = abs(a.y-b.y)
 	if minim > maxim:
 		minim, maxim = maxim, minim
-	return (math.sqrt(2) - 1) * minim + maxim
+	return ((math.sqrt(2) - 1) * minim) + maxim
 		
 
 
 class Dstar:
-	minx,miny,maxx,maxy=0,0,100,100
+	minx,miny,maxx,maxy=0,0,200,200
 	openList = Queue.PriorityQueue()
 	cellHash = {}
 	openHash = {}
@@ -87,7 +87,7 @@ class Dstar:
 		tmp.g = tmp.rhs = self.heuristic(self.s_start,self.s_goal)
 		tmp.cost = self.C1
 		self.cellHash[self.s_start] = tmp
-
+		print tmp.g,tmp.rhs
 		self.s_start = self.calculateKey(self.s_start)
 		self.s_last = self.s_start
 
@@ -147,12 +147,15 @@ class Dstar:
 
 		k = 0
 		s_start =self.calculateKey(self.s_start)
-		print "STATR", s_start
-		while( (not self.openList.empty()) and 
-		 (self.openList.queue[0] < s_start) or
-		 (self.getRHS(s_start) != self.getG(s_start))):
+		if not(self.openList.queue[0] < s_start): 
+			print "self.getRHS(s_start) != self.getG(s_start)" , self.getRHS(s_start) , self.getG(s_start)
+			print "STATR", s_start, self.openList.queue, len(self.openList.queue)
+						
+		while( ((not self.openList.empty()) and (self.openList.queue[0] < s_start)) or
+		 ( (self.getRHS(s_start) != self.getG(s_start)))
+		  ):
 			k = k + 1
-			print len(self.openList),"QUEEE"
+			print "QUEEE",len(self.openList.queue)
 			if k > self.maxSteps:
 				print "Reached max steps"
 				return -1
@@ -162,21 +165,23 @@ class Dstar:
 			test = (self.getRHS(self.s_start) == self.getG(self.s_start))
 
 			while True:
-				if self.openList.empty(): return 1
+				if self.openList.empty():
+					# print "Run OUT"
+					return 1
 				u = self.openList.get()
-
-				if self.isValid(u):
-					if (not(u < s_start) and (not test)): return 2
-					break
+				if not self.isValid(u): continue
+				if (not(u < s_start) and (not test)): return 2
+				break
+				
 
 			cur = self.openHash.get(u)
 
 			k_old =  u;
 
-			if (k_old < calculateKey(u)):
+			if (k_old < self.calculateKey(u)):
 				self.insert(u)
 			elif (self.getG(u) > self.getRHS(u)):
-				self.setG(u,getRHS(u))
+				self.setG(u,self.getRHS(u))
 				s = self.getPred(u)
 				for i in s:
 					self.updateVertex(i)
@@ -190,11 +195,10 @@ class Dstar:
 		print "STEPS", k
 		return 0
 
-	def updateVertex(self,u):
-		s = []
+	def updateVertex(self,u,flag=None):
 
 		if (u != self.s_goal):
-			succL = self.getSucc(u) or []
+			succL = self.getSucc(u)
 			tmp = float("Inf")
 			tmp2 = None
 
@@ -203,9 +207,15 @@ class Dstar:
 				if tmp2 < tmp: tmp = tmp2
 
 			if not(self.close(self.getRHS(u),tmp)):
+				print "SET RHS = " , u, tmp
 				self.setRHS(u, tmp)
+
 		if not(self.close(self.getG(u), self.getRHS(u))):
+			# print "inserted"
 			self.insert(u)
+			print u
+		# else:
+			# print "NOT INSERTED"
 
 
 	def insert(self,u):
@@ -213,8 +223,8 @@ class Dstar:
 		cur = self.openHash.get(u,None)
 		csum = self.keyHashCode(u)
 
-		# if (cur != None and self.close(csum,cur)):
-		# 	return
+		if (cur != None and self.close(csum,cur)):
+			return
 
 		self.openHash[u] = csum
 		self.openList.put(u)
@@ -222,8 +232,8 @@ class Dstar:
 
 	def calculateKey(self,u):
 		val = min(self.getRHS(u),self.getG(u))
-		u.k[0] = val + self.heuristic(u, self.s_start) + self.k_m
-		u.k[1] = val
+		u.k = [val + self.heuristic(u, self.s_start) + self.k_m,val]
+		# print u,self.heuristic(u, self.s_start)
 		return u
 
 	def cost(self,a,b):
@@ -238,7 +248,7 @@ class Dstar:
 		# print "this SHOULD BE NEGATIVE",val.cost, val,a
 		return scale * val.cost
 
-	def updateCell(self,x,y,val):
+	def updateCell(self,x,y,val,flag = None):
 		u = state()
 		u.x = x
 		u.y = y
@@ -247,7 +257,7 @@ class Dstar:
 
 		self.makeNewCell(u)
 		self.cellHash[u].cost = val
-		self.updateVertex(u)
+		self.updateVertex(u,flag = flag)
 
 	def getSucc(self,u,r = 1):
 		s = []
@@ -255,7 +265,7 @@ class Dstar:
 		if self.occupied(u): return []
 
 		for x in range(-r,1+r):
-			for y in range(-1,2):
+			for y in range(-r,1+r):
 				if not(x == 0 and y == 0):
 					s.append(state(u.x+x,u.y + y))
 		return s
@@ -291,7 +301,7 @@ class Dstar:
 				if not(x == 0 and y == 0):
 					nu = state(u.x+x,u.y + y)
 					if not self.occupied(nu): s.append(nu)
-		return s.reverse()
+		return s
 
 	def updateStart(self,x,y):
 		self.s_start.x = x
@@ -342,6 +352,7 @@ class Dstar:
 	def replan(self):
 		self.path = []
 		path = []
+		print self.s_start
 		res = self.computeShortestPath()
 		print "RES", res
 
@@ -355,17 +366,15 @@ class Dstar:
 		if (math.isinf(self.getG(self.s_start))):
 			print "NO PATH2"
 			return False
-		s = []
-		s_set = set()
+
 		while cur_state != self.s_goal:
 			path.append(cur_state)
 			# s_set = set()
 			# self.visualize(path)
 			# print cur_state
-			if self.getSucc(cur_state) != None:
-				# s += self.getSucc(cur_state)
-				s_set = s_set.union(set(self.getSucc(cur_state)))
-			if len(s_set) == 0:
+			
+			s = self.getSucc(cur_state)
+			if len(s) == 0:
 				print "NO PATH3"
 				return False
 
@@ -373,7 +382,6 @@ class Dstar:
 			tmin = None
 
 			smin = state()
-			s = s_set
 			for i,place in enumerate(s):
 				val = self.cost(cur_state,place)
 				val2 = self.trueDist(place,self.s_goal) + self.trueDist(self.s_start,place)
@@ -432,7 +440,7 @@ class Dstar:
 			cv2.waitKey(waitKey)
 
 #usage ()
-xx = Dstar(10,10,80,80)
+xx = Dstar(40,50,140,90)
 # for x in range(xx.maxx):
 # 	for y in range(xx.maxy):
 		# xx.updateCell(x,y,0)
@@ -467,7 +475,7 @@ def draw_circle(event,x,y,flags,param):
 # 	xx.updateCell(y,2*y+3,-1)
 # 	xx.updateCell(y,2*y+1,-1)
 # 	xx.updateCell(y,2*y+2,-1)
-		
+
 cv2.setMouseCallback('path',draw_circle)
 
 while(1):
