@@ -20,6 +20,9 @@ class state:
 		elif (self.k[0] > other.k[0]-0.00001): return False
 		return self.k[1] > other.k[1]
 
+	def __ge__(self,other):		
+		return self.__gt__(other) or self.__eq__(other)
+
 	def __le__(self,other):
 		if (self.k[0] < other.k[0]): return True
 		elif (self.k[0] > other.k[0]): return False
@@ -147,9 +150,9 @@ class Dstar:
 
 		k = 0
 		s_start =self.calculateKey(self.s_start)
-		if not(self.openList.queue[0] < s_start): 
-			print "self.getRHS(s_start) != self.getG(s_start)" , self.getRHS(s_start) , self.getG(s_start)
-			print "STATR", s_start, self.openList.queue, len(self.openList.queue)
+		# if not(self.openList.queue[0] < s_start): 
+		# 	print "self.getRHS(s_start) != self.getG(s_start)" , self.getRHS(s_start) , self.getG(s_start)
+		# 	print "STATR", s_start, self.openList.queue, len(self.openList.queue)
 						
 		while( ((not self.openList.empty()) and (self.openList.queue[0] < s_start)) or
 		 ( (self.getRHS(s_start) != self.getG(s_start)))
@@ -175,11 +178,10 @@ class Dstar:
 						return 2
 					break
 				
-			old_len = len(self.openHash)
-			cur = self.openHash.get(u)
+
 			del self.openHash[u]
-			if old_len - 1 != len(self.openHash):
-				print "eRADASDASDASrror"
+			
+
 			k_old =  u;
 
 			if (k_old < self.calculateKey(u)):
@@ -211,13 +213,12 @@ class Dstar:
 				if tmp2 < tmp: tmp = tmp2
 
 			if not(self.close(self.getRHS(u),tmp)):
-				print "SET RHS = " , u, tmp
+				# print "SET RHS = " , u, tmp
 				self.setRHS(u, tmp)
 
 		if not(self.close(self.getG(u), self.getRHS(u))):
 			# print "inserted"
 			self.insert(u)
-			print u
 		# else:
 			# print "NOT INSERTED"
 
@@ -282,7 +283,7 @@ class Dstar:
 		cur = self.openHash.get(u)
 		if cur == None: return False
 		if not(self.close(self.keyHashCode(u), cur)):
-			print "THERE BUT NOOT VALID", self.keyHashCode(u),cur
+			# print "THERE BUT NOOT VALID", self.keyHashCode(u),cur
 			return False
 		return True
 
@@ -395,9 +396,9 @@ class Dstar:
 				val += self.getG(place)
 				# print "p",i,place
 				# self.visualize(point=place,points=list(s_set))
-				# self.visualize(point=place,waitKey=100)
-				# print "val", val,"True Dist", val2, "cmin", cmin ,"min t",tmin,"here>goal", self.trueDist(place,self.s_goal) ,"start>here", self.trueDist(self.s_start,place)
-				# print
+				# self.visualize(point=place,waitKey=1)
+
+
 				if self.close(val,cmin):
 					if tmin > val2:
 						tmin = val2
@@ -407,7 +408,6 @@ class Dstar:
 						tmin = val2
 						cmin = val
 						smin = place
-			# print cur_state, smin
 			cur_state = smin
 		path.append(self.s_goal)
 		self.path = path
@@ -420,11 +420,9 @@ class Dstar:
 		if points:
 			for point in points:
 				frame[point.x,point.y] = (255,0,255)
-		if point:
-				frame[point.x,point.y] = (255,255,255)
-		if path:
-			for x in path:
-				frame[x.x,x.y] = (255,0,0)
+
+		for node,x in self.openHash.items():
+			frame[node.x,node.y] = (128,0,128)
 
 		for node,info in self.cellHash.iteritems():
 			if info.cost == 1:
@@ -435,8 +433,9 @@ class Dstar:
 			else:
 				frame[node.x,node.y] = (255,0,0)
 
-		for x in self.openList.queue:
-			frame[node.x,node.y] = (128,0,128)
+		# for x in self.openList.queue:
+		# 	frame[x.x,x.y] = (128,0,128)
+		
 
 		for x in self.path:
 			frame[x.x,x.y] = (0,255,0)
@@ -495,7 +494,7 @@ while(1):
 		xx.visualize()
 	elif k == 27:
 		break
-	if autoreplan : 
+	if autoreplan and change: 
 		xx.replan()
 		xx.visualize()
 		change = False
