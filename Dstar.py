@@ -162,20 +162,24 @@ class Dstar:
 
 			u = state()
 
-			test = (self.getRHS(self.s_start) == self.getG(self.s_start))
+			test = (self.getRHS(self.s_start) != self.getG(self.s_start))
 
 			while True:
 				if self.openList.empty():
 					# print "Run OUT"
 					return 1
 				u = self.openList.get()
-				if not self.isValid(u): continue
-				if (not(u < s_start) and (not test)): return 2
-				break
+				if self.isValid(u):
+					if (not(u < s_start) and (not test)): 
+						print  "not u < start", u ,s_start, test
+						return 2
+					break
 				
-
+			old_len = len(self.openHash)
 			cur = self.openHash.get(u)
-
+			del self.openHash[u]
+			if old_len - 1 != len(self.openHash):
+				print "eRADASDASDASrror"
 			k_old =  u;
 
 			if (k_old < self.calculateKey(u)):
@@ -277,7 +281,9 @@ class Dstar:
 	def isValid(self,u):
 		cur = self.openHash.get(u)
 		if cur == None: return False
-		if not(self.close(self.keyHashCode(u), cur)): return False
+		if not(self.close(self.keyHashCode(u), cur)):
+			print "THERE BUT NOOT VALID", self.keyHashCode(u),cur
+			return False
 		return True
 
 	
